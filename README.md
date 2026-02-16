@@ -18,3 +18,8 @@ Random Forest Classifier
    pip install -r requirements.txt
 3. Run:
    python src/train.py
+
+## 🚀 Future Improvements
+- Add model saving using joblib
+- Add prediction script
+- Deploy as web app
