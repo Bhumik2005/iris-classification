@@ -1,35 +1,86 @@
+import argparse
+import joblib
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.datasets import load_iris, load_wine, load_breast_cancer
+
+from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.svm import SVC
 
 
-def load_dataset(choice):
-    if choice == "iris":
-        data = load_iris()
-    elif choice == "wine":
-        data = load_wine()
-    elif choice == "cancer":
-        data = load_breast_cancer()
-    else:
-        print("Invalid choice. Defaulting to Iris.")
-        data = load_iris()
-
+def load_data():
+    data = load_iris()
     df = pd.DataFrame(data.data, columns=data.feature_names)
     df["target"] = data.target
     return df
 
 
 def visualize_data(df):
-    print("\nShowing pairplot visualization...")
+    print("Showing dataset visualization...")
     sns.pairplot(df, hue="target")
     plt.show()
 
 
-def train_model(df):
+def train_models(X_train, y_train):
+    models = {
+        "Logistic Regression": LogisticRegression(max_iter=200),
+        "Random Forest": RandomForestClassifier(),
+        "SVM": SVC()
+    }
+
+    trained_models = {}
+
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        trained_models[name] = model
+
+    return trained_models
+
+
+def evaluate_models(models, X_test, y_test):
+    best_model = None
+    best_accuracy = 0
+
+    for name, model in models.items():
+        predictions = model.predict(X_test)
+        accuracy = accuracy_score(y_test, predictions)
+
+        print(f"\n{name} Accuracy: {accuracy}")
+        print("Classification Report:")
+        print(classification_report(y_test, predictions))
+
+        cm = confusion_matrix(y_test, predictions)
+        sns.heatmap(cm, annot=True, fmt="d")
+        plt.title(f"{name} Confusion Matrix")
+        plt.show()
+
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_model = model
+
+    return best_model
+
+
+def save_model(model):
+    joblib.dump(model, "model/best_model.pkl")
+    print("\nBest model saved to model/best_model.pkl")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--visualize", action="store_true")
+    args = parser.parse_args()
+
+    df = load_data()
+
+    if args.visualize:
+        visualize_data(df)
+
     X = df.drop("target", axis=1)
     y = df["target"]
 
@@ -37,22 +88,6 @@ def train_model(df):
         X, y, test_size=0.2, random_state=42
     )
 
-    model = RandomForestClassifier()
-    model.fit(X_train, y_train)
-
-    predictions = model.predict(X_test)
-    accuracy = accuracy_score(y_test, predictions)
-
-    print("\nModel Accuracy:", accuracy)
-
-
-if __name__ == "__main__":
-    print("Choose dataset: iris / wine / cancer")
-    choice = input("Enter dataset name: ").lower()
-
-    df = load_dataset(choice)
-    print("\nFirst 5 rows:")
-    print(df.head())
-
-    visualize_data(df)
-    train_model(df)
+    models = train_models(X_train, y_train)
+    best_model = evaluate_models(models, X_test, y_test)
+    save_model(best_model)
