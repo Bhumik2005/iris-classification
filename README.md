@@ -5,6 +5,8 @@ Predict the species of Iris flower based on sepal and petal measurements.
 
 ## 📊 Dataset
 Iris dataset from scikit-learn.
+cancer dataset
+wine dataset
 
 ## 🧠 Model Used
 Random Forest Classifier
